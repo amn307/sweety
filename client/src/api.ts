@@ -51,7 +51,8 @@ export async function api<T>(
   const response = await fetch(`${API_URL}${path}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
+    "Content-Type": "application/json",
+    "X-Timezone-Offset": String(new Date().getTimezoneOffset()),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },

@@ -39,7 +39,7 @@ function parseDate(value) {
   return date;
 }
 
-function validateReading(body) {
+function validateReading(body, timezoneOffsetMinutes = 0) {
   if (!body || typeof body !== "object" ||
       Array.isArray(body)) {
     return { error: "Invalid reading data." };
@@ -62,7 +62,15 @@ function validateReading(body) {
   }
 
   // Compare calendar dates in UTC to avoid timezone shifts.
-  const today = new Date().toISOString().slice(0, 10);
+  const offset = Number(timezoneOffsetMinutes);
+
+  if (!Number.isInteger(offset) || offset < -840 || offset > 840) {
+    return { error: "Invalid timezone offset." };
+  }
+
+  const today = new Date(
+    Date.now() - offset * 60_000
+  ).toISOString().slice(0, 10);
 
   if (date > today) {
     return { error: "Date cannot be in the future." };
@@ -133,7 +141,7 @@ router.get("/:id", async (req, res) => {
 
 // POST create reading
 router.post("/", async (req, res) => {
-  const data = validateReading(req.body);
+  const data = validateReading(req.body, req.headers["x-timezone-offset"]);
 
   if (data.error) {
     return res.status(400).json({ message: data.error });
@@ -192,7 +200,7 @@ router.put("/:id", async (req, res) => {
     return res.status(400).json({ message: "Invalid reading ID." });
   }
 
-  const data = validateReading(req.body);
+  const data = validateReading(req.body, req.headers["x-timezone-offset"]);
 
   if (data.error) {
     return res.status(400).json({ message: data.error });
